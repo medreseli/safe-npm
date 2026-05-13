@@ -1,0 +1,4 @@
+#!/bin/bash
+echo -e "\e[31m[BLOCKED]\e[0m The raw 'npm' command is disabled for security."
+echo -e "Please use \e[32msn\e[0m (Safe NPM) instead."
+exit 1

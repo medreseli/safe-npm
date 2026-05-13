@@ -1,0 +1,4 @@
+#!/bin/bash
+echo -e "\e[31m[BLOCKED]\e[0m The raw 'npx' command is disabled for security."
+echo -e "Please use \e[32msnx\e[0m (Safe NPX) instead."
+exit 1

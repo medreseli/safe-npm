@@ -1,0 +1,19 @@
+#!/bin/bash
+source /usr/local/lib/sn-core.sh
+
+# Find the target package name (first argument without a hyphen)
+TARGET_PKG=""
+for arg in "$@"; do
+    if [[ ! "$arg" == -* ]]; then
+        TARGET_PKG="$arg"
+        break
+    fi
+done
+
+if [ -n "$TARGET_PKG" ]; then
+    # npx temporarily installs packages. We simulate that install to check the tree.
+    check_packages "$TARGET_PKG"
+fi
+
+# Run the real npx command
+exec "$REAL_NPX" "$@"

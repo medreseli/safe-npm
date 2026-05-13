@@ -1,0 +1,10 @@
+#!/bin/bash
+source /usr/local/lib/sn-core.sh
+
+if [[ "$1" == "install" || "$1" == "i" || "$1" == "add" ]]; then
+    # Pass arguments to the security checker
+    check_packages "$@"
+fi
+
+# Run the real npm command
+exec "$REAL_NPM" "$@"
