@@ -1,4 +1,25 @@
 #!/bin/bash
-echo -e "\e[31m[BLOCKED]\e[0m The raw 'npm' command is disabled for security."
-echo -e "Please use \e[32msn\e[0m (Safe NPM) instead."
-exit 1
+
+# Find the real system npm (ignoring this script)
+REAL_NPM=$(which -a npm | grep -v "/usr/local/bin/npm" | head -n 1)
+
+# List of commands that fetch from the registry
+DANGEROUS_COMMANDS="install i add update up upgrade"
+
+# Check if the first argument is in our dangerous list
+is_dangerous=false
+for cmd in $DANGEROUS_COMMANDS; do
+    if [ "$1" == "$cmd" ]; then
+        is_dangerous=true
+        break
+    fi
+done
+
+if [ "$is_dangerous" = true ]; then
+    echo -e "\e[31m[BLOCKED]\e[0m Installation commands are disabled via raw 'npm' for security."
+    echo -e "Please use \e[32msn $*\e[0m instead to verify dependency ages."
+    exit 1
+else
+    # It's a safe command (run, test, list, etc.), pass it to the real npm
+    exec "$REAL_NPM" "$@"
+fi

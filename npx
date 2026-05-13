@@ -1,4 +1,13 @@
 #!/bin/bash
-echo -e "\e[31m[BLOCKED]\e[0m The raw 'npx' command is disabled for security."
-echo -e "Please use \e[32msnx\e[0m (Safe NPX) instead."
-exit 1
+
+# Find the real system npx
+REAL_NPX=$(which -a npx | grep -v "/usr/local/bin/npx" | head -n 1)
+
+# If the package exists locally in node_modules/.bin, it's safe to run
+if [ -f "./node_modules/.bin/$1" ]; then
+    exec "$REAL_NPX" "$@"
+else
+    echo -e "\e[31m[BLOCKED]\e[0m Raw 'npx' is disabled for remote packages."
+    echo -e "Please use \e[32msnx $*\e[0m instead to verify the package age."
+    exit 1
+fi

@@ -61,6 +61,8 @@ Installation is complete! The system will now route all users through `safe-npm`
 
 ## Usage
 
+
+
 Simply replace your normal Node.js workflow commands with `sn` and `snx`. 
 
 ```bash
@@ -79,6 +81,22 @@ If you or another user accidentally types `npm install`, you will see:
 [BLOCKED] The raw 'npm' command is disabled for security.
 Please use sn (Safe NPM) instead.
 ```
+
+`safe-npm` is intelligent. It distinguishes between safe local commands and dangerous registry-facing commands.
+
+### Blocked Commands
+The following will be blocked when using raw `npm`, forcing you to use `sn`:
+- `npm install` / `npm i`
+- `npm add`
+- `npm update`
+- `npx <remote-package>`
+
+### Allowed Commands
+The following will pass through and work normally with raw `npm`:
+- `npm run <script>`
+- `npm test`
+- `npm list`
+- `npx <local-package>` (if already installed in node_modules)
 
 ### What happens when a threat is detected?
 If you try to install a package that includes a recently published dependency, you will see a warning like this:
@@ -118,6 +136,28 @@ sudo nano /usr/local/lib/sn-core.sh
 Change `NPM_SECURITY_DAYS=7` to your preferred number of days.
 
 ---
+
+## NVM Compatibility
+`safe-npm` is fully compatible with Node Version Manager (NVM). The engine will automatically detect and use whichever Node version is currently active via NVM.
+
+However, because NVM places its binaries at the very front of your shell's `$PATH`, it will bypass the `npm` and `npx` blocking scripts located in `/usr/local/bin/`. 
+
+To fix this and successfully block the native commands for all users on the system, you must create a global shell function routing in the system-wide bash configuration:
+
+1. Open the global bashrc file:
+   ```bash
+   sudo nano /etc/bash.bashrc
+   ```
+
+2. Paste the following at the very bottom:
+   ```bash
+   # Force npm and npx commands to use the safe-npm blockers
+   npm() { /usr/local/bin/npm "$@"; }
+   npx() { /usr/local/bin/npx "$@"; }
+   ```
+
+3. Restart your terminal. The native commands are now successfully blocked! 
+*(Note: If you use Zsh instead of Bash, add those lines to `/etc/zsh/zshrc` instead).*
 
 ## Limitations & Best Practices
 
