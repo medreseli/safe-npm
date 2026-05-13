@@ -1,6 +1,6 @@
-# Safe NPM (`safe-npm`)
+# Safe NPM (safe-npm)
 
-A system-wide security wrapper for `npm` and `npx` designed to protect developers from malicious packages, typosquatting, and compromised transitive dependencies.
+A system-wide security wrapper for npm and npx designed to protect developers from malicious packages, typosquatting, and compromised transitive dependencies.
 
 ## The Problem
 Malicious actors frequently upload compromised packages to the NPM registry. Often, these are disguised as popular libraries (typosquatting) or are hidden deep inside the dependency tree of a legitimate package. Usually, these malicious packages are discovered and removed by the NPM security team within a few days. 
@@ -13,11 +13,11 @@ However, if you happen to run `npm install` during that short window, your syste
 Before installing or executing any package, `safe-npm` intercepts the command, maps out the **entire nested dependency tree**, and checks the publication date of every single package about to be installed. If any package (direct or transitive) is newer than 7 days, the installation pauses, alerts you to the exact suspicious package, and requires manual confirmation to proceed.
 
 ### Key Features
-- **Blocks Native Commands**: Prevents accidental use of `npm` and `npx` system-wide.
-- **Deep Tree Scanning**: Evaluates the exact versions of *all* nested dependencies, not just the top-level package.
-- **Blazing Fast**: Uses concurrent background workers to query NPM registry dates in parallel.
-- **System-Wide**: Applies to all user accounts on the machine.
-- **Sudo-Proof**: Because the scripts sit in `/usr/local/bin`, they protect you even if you run `sudo sn install -g`.
+- Blocks Native Commands: Prevents accidental use of npm and npx system-wide.
+- Deep Tree Scanning: Evaluates the exact versions of all nested dependencies, not just the top-level package.
+- Blazing Fast: Uses concurrent background workers to query NPM registry dates in parallel.
+- System-Wide: Applies to all user accounts on the machine.
+- Sudo-Proof: Because the scripts sit in `/usr/local/bin`, they protect you even if you run `sudo sn install -g`.
 
 ---
 
@@ -32,7 +32,7 @@ sudo apt update && sudo apt install jq -y
 
 ## Installation
 
-Since this setup applies system-wide, you will need `sudo` privileges to move the files into the correct directories.
+Since this setup applies system-wide, you will need `sudo` privileges to copy the files into the correct directories.
 
 **1. Clone the repository and enter the directory**
 ```bash
@@ -45,14 +45,14 @@ cd safe-npm
 chmod +x sn snx npm npx sn-core.sh
 ```
 
-**3. Move the core engine to the system libraries folder**
+**3. Copy the core engine to the system libraries folder**
 ```bash
-sudo mv sn-core.sh /usr/local/lib/
+sudo cp sn-core.sh /usr/local/lib/
 ```
 
-**4. Move the executable commands to the system binaries folder**
+**4. Copy the executable commands to the system binaries folder**
 ```bash
-sudo mv npm npx sn snx /usr/local/bin/
+sudo cp npm npx sn snx /usr/local/bin/
 ```
 
 Installation is complete! The system will now route all users through `safe-npm`.
