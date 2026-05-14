@@ -1,9 +1,13 @@
 #!/bin/bash
-# /usr/local/lib/sn-core.sh (v1.2 - Schema Agnostic)
+# /usr/local/lib/sn-core.sh (v1.3 - With Local Cache)
 
 NPM_SECURITY_DAYS=7
 THRESHOLD_SEC=$((NPM_SECURITY_DAYS * 86400))
 NOW_SEC=$(date +%s)
+CACHE_DIR="$HOME/.cache/safe-npm"
+
+# Ensure cache directory exists
+mkdir -p "$CACHE_DIR"
 
 REAL_NPM=$(which -a npm | grep -v "/usr/local/bin/npm" | head -n 1)
 REAL_NPX=$(which -a npx | grep -v "/usr/local/bin/npx" | head -n 1)
@@ -20,7 +24,7 @@ check_packages() {
     # Capture dry-run output
     raw_out=$("$REAL_NPM" install "$@" --dry-run --json 2>/dev/null)
 
-    # Extract only the JSON part (strips the "change vitest..." text from the top)
+    # Extract only the JSON part
     local dry_run_out
     dry_run_out=$(echo "$raw_out" | sed -n '/^{/,$p')
 
@@ -37,7 +41,6 @@ check_packages() {
     fi
 
     # Extract packages using a schema-agnostic JQ filter
-    # This covers .added, .updated, .add, and .change (nested)
     local pending_pkgs
     pending_pkgs=$(echo "$dry_run_out" | jq -r '
         (try .added[]? | "\(.name)||\(.version)"),
@@ -53,7 +56,7 @@ check_packages() {
 
     local pkg_count
     pkg_count=$(echo "$pending_pkgs" | wc -l)
-    echo -e "\e[34m[Security Check]\e[0m Checking age of $pkg_count packages..."
+    echo -e "\e[34m[Security Check]\e[0m Checking age of $pkg_count packages (cached results will be skipped)..."
 
     local tmp_warn
     tmp_warn=$(mktemp)
@@ -63,12 +66,28 @@ check_packages() {
         (
             local name="${item%||*}"
             local version="${item#*||}"
-            local pub_time
-            pub_time=$("$REAL_NPM" view "${name}@${version}" "time.[\"${version}\"]" 2>/dev/null)
+            # Create a safe filename for the cache (replace / with _)
+            local cache_key
+            cache_key=$(echo "${name}@${version}" | sed 's/\//__/g')
+            local cache_file="$CACHE_DIR/$cache_key"
+
+            local pub_time=""
+
+            # Check if we have this version in cache
+            if [ -f "$cache_file" ]; then
+                pub_time=$(cat "$cache_file")
+            else
+                # Not in cache, fetch from registry
+                pub_time=$("$REAL_NPM" view "${name}@${version}" "time.[\"${version}\"]" 2>/dev/null)
+                if [ -n "$pub_time" ]; then
+                    pub_time="${pub_time%\"}"
+                    pub_time="${pub_time#\"}"
+                    # Save to cache for future runs
+                    echo "$pub_time" > "$cache_file"
+                fi
+            fi
 
             if [ -n "$pub_time" ]; then
-                pub_time="${pub_time%\"}"
-                pub_time="${pub_time#\"}"
                 local pub_sec
                 pub_sec=$(date -d "$pub_time" +%s 2>/dev/null)
 
@@ -96,7 +115,7 @@ check_packages() {
             exit 1
         fi
     else
-        echo -e "\e[32m[Safe]\e[0m All dependencies are older than $NPM_SECURITY_DAYS days."
+        echo -e "\e[32m[Safe]\e[0m All dependencies are verified."
         rm -f "$tmp_warn"
     fi
 }

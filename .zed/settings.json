@@ -1,0 +1,19 @@
+{
+  "disable_ai": true,
+  "hidden_files": [
+    ".astro",
+    ".wrangler",
+    ".tanstack",
+    ".vscode",
+    "dist",
+    "node_modules",
+    "prettier.config.js",
+    "package-lock.json",
+    ".prettierignore",
+    "tsconfig",
+    "tsconfig.json",
+    "worker-configuration.d.ts",
+    ".cta.json",
+    "eslint.config.js",
+  ],
+}

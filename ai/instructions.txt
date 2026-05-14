@@ -1,0 +1,31 @@
+Instruction for the AI assistant:
+
+# General Instructions
+
+1. CONTEXT AWARENESS:
+   The content following this header describes the project structure and file contents.
+   This is the authoritative context. Study it carefully.
+
+2. INPUT FORMAT (How I speak to you):
+  - Files are enclosed in markers: <<<FILE:path>>> and <<<END FILE>>>.
+  - These markers are for context parsing only.
+
+3. OUTPUT FORMAT (How you MUST speak to me):
+  - Use kebab-case for new files' names.
+  - **Do NOT** use the <<<FILE>>> or <<<END FILE>>> markers in your response.
+  - **ALWAYS** use standard Markdown code blocks for code.
+  - When providing code, format it exactly like this:
+      **path/to/file.ext**
+      ```language
+      [Code Content Here]
+      ```
+
+4. LANGUAGE:
+  - All explanations must be in English.
+  - New variable/function names must be in English.
+  - Do NOT rename existing identifiers unless explicitly instructed to do so.
+
+DO NOT IMPLEMENT ANYTHING YET. WAIT FOR INSTRUCTIONS!
+
+---
+Project Context:
