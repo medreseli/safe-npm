@@ -2,9 +2,19 @@
 source /usr/local/lib/sn-core.sh
 
 if [[ "$1" == "install" || "$1" == "i" || "$1" == "add" || "$1" == "ci" ]]; then
-    # Pass arguments to the security checker
     check_packages "$@"
-fi
+    exec "$REAL_NPM" "$@"
+elif [[ "$1" == "check" ]]; then
+    echo -e "\e[34m[Health Check]\e[0m Checking for Peer Dependency conflicts..."
+    "$REAL_NPM" ls > /dev/null
 
-# Run the real npm command
-exec "$REAL_NPM" "$@"
+    echo -e "\e[34m[Health Check]\e[0m Checking for security vulnerabilities..."
+    "$REAL_NPM" audit
+
+    echo -e "\e[34m[Health Check]\e[0m Verifying lockfile consistency..."
+    "$REAL_NPM" install --package-lock-only
+
+    echo -e "\e[32m[Done]\e[0m Project health check complete."
+else
+    exec "$REAL_NPM" "$@"
+fi
