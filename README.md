@@ -86,7 +86,7 @@ Please use sn (Safe NPM) instead.
 
 ### Blocked Commands
 The following will be blocked when using raw `npm`, forcing you to use `sn`:
-- `npm install` / `npm i`
+- `npm install` / `npm i` / `npm ci`
 - `npm add`
 - `npm update`
 - `npx <remote-package>`

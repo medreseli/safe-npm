@@ -4,7 +4,7 @@
 REAL_NPM=$(which -a npm | grep -v "/usr/local/bin/npm" | head -n 1)
 
 # List of commands that fetch from the registry
-DANGEROUS_COMMANDS="install i add update up upgrade"
+DANGEROUS_COMMANDS="install i ci add update up upgrade"
 
 # Check if the first argument is in our dangerous list
 is_dangerous=false
