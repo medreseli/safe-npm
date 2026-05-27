@@ -17,8 +17,19 @@ done
 
 if [ "$is_dangerous" = true ]; then
     echo -e "\e[31m[BLOCKED]\e[0m Installation commands are disabled via raw 'npm' for security."
-    echo -e "Please use \e[32msn $*\e[0m instead to verify dependency ages."
-    exit 1
+
+    # Prompt the user to run with sn instead if the environment is interactive
+    if [ -t 1 ]; then
+        read -p "Would you like to run 'sn $*' instead? (Y/n): " choice < /dev/tty
+        if [[ -z "$choice" || "$choice" =~ ^[Yy]$ ]]; then
+            exec /usr/local/bin/sn "$@"
+        else
+            echo -e "\e[31mCommand aborted.\e[0m"
+            exit 1
+        fi
+    else
+        exit 1
+    fi
 else
     # It's a safe command (run, test, list, etc.), pass it to the real npm
     exec "$REAL_NPM" "$@"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# /usr/local/lib/sn-core.sh (v1.3 - With Local Cache)
+# /usr/local/lib/sn-core.sh (v1.4 - Fixed Subshell Wait & Cache Handling)
 
 NPM_SECURITY_DAYS=7
 THRESHOLD_SEC=$((NPM_SECURITY_DAYS * 86400))
@@ -61,7 +61,9 @@ check_packages() {
     local tmp_warn
     tmp_warn=$(mktemp)
 
-    echo "$pending_pkgs" | while IFS= read -r item; do
+    # Using here-string keeps the while-loop in the parent process,
+    # ensuring that wait will block until all background jobs finish.
+    while IFS= read -r item; do
         if [ -z "$item" ]; then continue; fi
         (
             local name="${item%||*}"
@@ -73,23 +75,28 @@ check_packages() {
 
             local pub_time=""
 
-            # Check if we have this version in cache
+            # Check if we have this version in cache and that it is not empty
             if [ -f "$cache_file" ]; then
                 pub_time=$(cat "$cache_file")
-            else
-                # Not in cache, fetch from registry
-                pub_time=$("$REAL_NPM" view "${name}@${version}" "time.[\"${version}\"]" 2>/dev/null)
-                if [ -n "$pub_time" ]; then
-                    pub_time="${pub_time%\"}"
-                    pub_time="${pub_time#\"}"
-                    # Save to cache for future runs
+            fi
+
+            # Fetch from registry if cache is empty or missing
+            if [ -z "$pub_time" ]; then
+                pub_time=$("$REAL_NPM" view "$name" time --json 2>/dev/null | jq -r --arg v "$version" '.[$v] // empty' 2>/dev/null)
+                if [ -n "$pub_time" ] && [ "$pub_time" != "null" ]; then
                     echo "$pub_time" > "$cache_file"
                 fi
             fi
 
-            if [ -n "$pub_time" ]; then
+            if [ -n "$pub_time" ] && [ "$pub_time" != "null" ]; then
+                # Strip milliseconds if present to maximize compatibility with system date utilities
+                local pub_time_clean="$pub_time"
+                if [[ "$pub_time" == *.* ]]; then
+                    pub_time_clean="${pub_time%.*}Z"
+                fi
+
                 local pub_sec
-                pub_sec=$(date -d "$pub_time" +%s 2>/dev/null)
+                pub_sec=$(date -d "$pub_time_clean" +%s 2>/dev/null)
 
                 if [ -n "$pub_sec" ]; then
                     local diff=$((NOW_SEC - pub_sec))
@@ -100,7 +107,7 @@ check_packages() {
                 fi
             fi
         ) &
-    done
+    done <<< "$pending_pkgs"
     wait
 
     if [ -s "$tmp_warn" ]; then
