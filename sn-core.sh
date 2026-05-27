@@ -1,5 +1,5 @@
 #!/bin/bash
-# /usr/local/lib/sn-core.sh (v1.4 - Fixed Subshell Wait & Cache Handling)
+# /usr/local/lib/sn-core.sh (v1.5 - Optimized with Concurrency Limiter)
 
 NPM_SECURITY_DAYS=7
 THRESHOLD_SEC=$((NPM_SECURITY_DAYS * 86400))
@@ -60,11 +60,25 @@ check_packages() {
 
     local tmp_warn
     tmp_warn=$(mktemp)
+    local pids=()
 
-    # Using here-string keeps the while-loop in the parent process,
-    # ensuring that wait will block until all background jobs finish.
     while IFS= read -r item; do
         if [ -z "$item" ]; then continue; fi
+
+        # Limit concurrency to 15 workers to prevent CPU exhaustion and NPM registry rate-limits
+        while [ "${#pids[@]}" -ge 15 ]; do
+            local active_pids=()
+            for pid in "${pids[@]}"; do
+                if kill -0 "$pid" 2>/dev/null; then
+                    active_pids+=("$pid")
+                fi
+            done
+            pids=("${active_pids[@]}")
+            if [ "${#pids[@]}" -ge 15 ]; then
+                sleep 0.05
+            fi
+        done
+
         (
             local name="${item%||*}"
             local version="${item#*||}"
@@ -107,6 +121,7 @@ check_packages() {
                 fi
             fi
         ) &
+        pids+=($!)
     done <<< "$pending_pkgs"
     wait
 

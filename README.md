@@ -15,8 +15,9 @@ Before installing or executing any package, `safe-npm` intercepts the command, m
 ### Key Features
 - **Blocks Native Commands**: Prevents accidental use of npm and npx system-wide.
 - **Deep Tree Scanning**: Evaluates the exact versions of all nested dependencies, not just the top-level package.
+- **Interactive Prompts**: When blocked via raw `npm` or `npx`, it offers an automated prompt to execute the safe command instantly without retyping.
+- **Controlled Concurrency**: Implements a parallel worker pool (limited to 15 concurrent jobs) to prevent CPU spikes or registry rate-limiting (HTTP 429) on large projects.
 - **Smart Caching**: Once a package version is verified, its publication date is stored locally. Subsequent checks are near-instant.
-- **Blazing Fast**: Uses concurrent background workers to query NPM registry dates in parallel.
 - **System-Wide**: Applies to all user accounts on the machine.
 - **Sudo-Proof**: Because the scripts sit in `/usr/local/bin`, they protect you even if you run `sudo sn install -g`.
 
@@ -75,27 +76,30 @@ sn run build
 snx create-react-app my-app
 ```
 
+### Interactive Command Redirection
 If you or another user accidentally types `npm install`, you will see:
 ```text
-[BLOCKED] The raw 'npm' command is disabled for security.
-Please use sn (Safe NPM) instead.
+[BLOCKED] Installation commands are disabled via raw 'npm' for security.
+Would you like to run 'sn install' instead? (Y/n): 
 ```
+Simply press **Enter** or **Y**, and `safe-npm` will automatically execute the safe process for you.
 
 ### Intelligent Routing
 `safe-npm` distinguishes between safe local commands and dangerous registry-facing commands.
 
 #### Blocked Commands
-The following will be blocked when using raw `npm`, forcing you to use `sn`:
+The following will be blocked when using raw `npm`, prompting you to run with `sn`:
 - `npm install` / `npm i` / `npm ci`
 - `npm add`
 - `npm update` / `npm up` / `npm upgrade`
 - `npx <remote-package>`
 
 #### Allowed Commands
-The following will pass through and work normally with raw `npm`:
+The following bypass the safety checks and will pass through directly to native binaries:
 - `npm run <script>`
 - `npm test`
 - `npm list`
+- `npm link` (inherently safe local symlinking for local development)
 - `npx <local-package>` (if already installed in node_modules)
 
 ### What happens when a threat is detected?
@@ -122,7 +126,7 @@ Are you sure you want to proceed? (y/N):
 2. **Dry Run Simulation**: It executes `npm install <packages> --dry-run --json`. This forces NPM to resolve the entire dependency tree without actually downloading or executing anything.
 3. **JSON Parsing**: It passes the resulting data to `jq` to extract a clean list of every single package and exact version that will be added or updated.
 4. **Local Cache Check**: It checks `~/.cache/safe-npm/` for the publication date of each version. If found, it skips the network request.
-5. **Concurrent API Checks**: For uncached packages, it spins up background processes (`&`) to query the `npm view` API.
+5. **Concurrent API Checks with Worker Control**: For uncached packages, it spins up parallel background processes (`&`). It monitors active process IDs to keep execution capped at a pool of **15 concurrent workers** to protect CPU limits and prevent HTTP 429 (rate-limiting) responses from the NPM registry.
 6. **Evaluation**: It converts timestamps to UNIX epoch time and compares them to the configured threshold.
 
 ---
